@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class mainScript : MonoBehaviour
+public class MainScript : MonoBehaviour
 {
     public Material highlightMaterial;
 
@@ -10,6 +10,10 @@ public class mainScript : MonoBehaviour
 
     public Material highlightMaterial3;
     public Material defaultMaterial;
+    public Material blackMaterial;
+    public Material whiteMaterial;
+
+    public GameObject turnField;
 
     // vychodzie pozicie sachovych figurok - cisla reprezentuju typ, poradie a tim
     // prva cislica je typ, druha je iteracia a tretia je tim
@@ -52,6 +56,23 @@ public class mainScript : MonoBehaviour
             { 171, 161, 151, 141, 131, 121, 111, 101 },
             { 211, 311, 411, 601, 501, 401, 301, 201 }
         };
+
+        // TODO generovanie panakov na spravne miesto
+        // string[] lines = System.IO.File.ReadAllLines(@"Assets\SavedGame\savedGame.txt");
+        // int i = 0;
+        // Debug.Log(lines.Length);
+        // foreach (string line in lines)
+        // {
+        //     string[] cols = line.Split(", ");
+        //     int j = 0;
+        //     foreach (string col in cols)
+        //     {
+        //         Debug.Log($"{j},{i}");
+        //         occupArray[i,j] = int.Parse(col);
+        //         j++;
+        //     }
+        //     i++;
+        // }
     }
     void Update()
     {
@@ -73,7 +94,7 @@ public class mainScript : MonoBehaviour
                     if (possibleNextFieldsFree.Contains(newFieldName))
                     {
                         // zmena poradia, ide super
-                        turn = 1 - turn;
+                        ChangeTurn();
 
                         // presun figurky
                         Vector3 moveVector = CalculateMoveVector();
@@ -86,7 +107,7 @@ public class mainScript : MonoBehaviour
                     if (possibleNextFieldsOccupiedByEnemy.Contains(newFieldName))
                     {
                         // zmena poradia, ide super
-                        turn = 1 - turn;
+                        ChangeTurn();
 
                         // vymazanie starej figurky
                         figureToDelete = occupArray[newSelY,newSelX];
@@ -95,7 +116,6 @@ public class mainScript : MonoBehaviour
                         // presun novej figurky
                         Vector3 moveVector = CalculateMoveVector();
                         GameObject.Find(selectedFigureName).transform.Translate(moveVector);
-                        Debug.Log(GameObject.Find(lastFieldName).transform.name);
 
                         occupArray[lastSelY,lastSelX] = 0;
                         occupArray[newSelY,newSelX] = selectedFigure;
@@ -183,6 +203,13 @@ public class mainScript : MonoBehaviour
     Vector3 CalculateMoveVector()
     {
         return new Vector3(newSelX - lastSelX, 0, newSelY - lastSelY);
+    }
+
+    void ChangeTurn()
+    {
+        turn = 1 - turn;
+        MeshRenderer mr = turnField.transform.GetComponent<MeshRenderer>();
+        mr.material = (mr.material.name).ToString().StartsWith("MatČiern") ? whiteMaterial : blackMaterial;
     }
 
     string GetFigType(int figure)
