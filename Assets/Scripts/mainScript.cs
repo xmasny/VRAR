@@ -7,6 +7,8 @@ public class mainScript : MonoBehaviour
     public Material highlightMaterial;
 
     public Material highlightMaterial2;
+
+    public Material highlightMaterial3;
     public Material defaultMaterial;
 
     // vychodzie pozicie sachovych figurok - cisla reprezentuju typ, poradie a tim
@@ -28,10 +30,15 @@ public class mainScript : MonoBehaviour
     private int newSelY;
     private string newFieldName;
     private Transform newField;
-    private List<string> possibleNextFields;
+    private List<string> possibleNextFieldsFree;
+    private List<string> possibleNextFieldsOccupiedByEnemy;
+    private int turn = 0;
 
     private int selectedFigure;
     private string selectedFigureName;
+
+    private int figureToDelete;
+    private string figureToDeleteName;
 
     void Start()
     {
@@ -63,10 +70,33 @@ public class mainScript : MonoBehaviour
                     newField = hit.transform;
 
 
-                    if (possibleNextFields.Contains(newFieldName))
+                    if (possibleNextFieldsFree.Contains(newFieldName))
                     {
+                        // zmena poradia, ide super
+                        turn = 1 - turn;
+
+                        // presun figurky
                         Vector3 moveVector = CalculateMoveVector();
                         GameObject.Find(selectedFigureName).transform.Translate(moveVector);
+                        occupArray[lastSelY,lastSelX] = 0;
+                        occupArray[newSelY,newSelX] = selectedFigure;
+                        UnFocus();
+                        return;
+                    }
+                    if (possibleNextFieldsOccupiedByEnemy.Contains(newFieldName))
+                    {
+                        // zmena poradia, ide super
+                        turn = 1 - turn;
+
+                        // vymazanie starej figurky
+                        figureToDelete = occupArray[newSelY,newSelX];
+                        figureToDeleteName = GetFigTeam(figureToDelete) + GetFigType(figureToDelete) + GetFigIteration(figureToDelete);
+                        Destroy(GameObject.Find(figureToDeleteName));
+                        // presun novej figurky
+                        Vector3 moveVector = CalculateMoveVector();
+                        GameObject.Find(selectedFigureName).transform.Translate(moveVector);
+                        Debug.Log(GameObject.Find(lastFieldName).transform.name);
+
                         occupArray[lastSelY,lastSelX] = 0;
                         occupArray[newSelY,newSelX] = selectedFigure;
                         UnFocus();
@@ -76,24 +106,38 @@ public class mainScript : MonoBehaviour
                     UnFocus();
                 }
 
-                MeshRenderer meshRenderer = hit.transform.GetComponent<MeshRenderer>();
-                meshRenderer.material = highlightMaterial;
-
                 lastSelX = int.Parse(hit.transform.name) % 10;
                 lastSelY = int.Parse(hit.transform.name) / 10;
                 lastFieldName = GetWholeFieldName(hit.transform.name);
                 lastField = hit.transform;
-                selected = true;
 
                 selectedFigure = occupArray[lastSelY,lastSelX];
-                if ( selectedFigure / 100 == 0 ) return;
-                selectedFigureName = GetFigTeam() + GetFigType() + GetFigIteration();
 
-                possibleNextFields = FindPossibleNextFields();
-                possibleNextFields.ForEach(possibleFieldName => {
-                    MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
-                    mr.material = highlightMaterial2;
-                });
+                // iba ked je na rade
+                if (!IsFieldFree(lastSelY, lastSelX) && GetFigTeamNumber(selectedFigure) == turn)
+                {
+                    MeshRenderer meshRenderer = hit.transform.GetComponent<MeshRenderer>();
+                    meshRenderer.material = highlightMaterial;
+
+                    selected = true;
+
+                    if ( selectedFigure / 100 == 0 ) return;
+                    selectedFigureName = GetFigTeam(selectedFigure) + GetFigType(selectedFigure) + GetFigIteration(selectedFigure);
+
+                    // calculate possible next moves
+                    (possibleNextFieldsFree, possibleNextFieldsOccupiedByEnemy) = FindPossibleNextFields(selectedFigure % 2);
+                    // highlight free fields
+                    possibleNextFieldsFree.ForEach(possibleFieldName => {
+                        MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
+                        mr.material = highlightMaterial2;
+                    });
+                    // highlight enemy-occupied fields
+                    possibleNextFieldsOccupiedByEnemy.ForEach(possibleFieldName => {
+                        MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
+                        mr.material = highlightMaterial3;
+                    });
+                }
+
             } else if (lastField) UnFocus();
         }
     }
@@ -103,7 +147,11 @@ public class mainScript : MonoBehaviour
         MeshRenderer oldMeshRenderer = lastField.GetComponent<MeshRenderer>();
         oldMeshRenderer.material = defaultMaterial;
         selected = false;
-        possibleNextFields.ForEach(possibleFieldName => {
+        possibleNextFieldsFree.ForEach(possibleFieldName => {
+            MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
+            mr.material = defaultMaterial;
+        });
+        possibleNextFieldsOccupiedByEnemy.ForEach(possibleFieldName => {
             MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
             mr.material = defaultMaterial;
         });
@@ -116,7 +164,7 @@ public class mainScript : MonoBehaviour
         lastSelY = 0;
         lastFieldName = null;
         lastField = null;
-        possibleNextFields = new List<string>();
+        possibleNextFieldsFree = new List<string>();
     }
 
     bool IsFieldFree(int y, int x)
@@ -125,15 +173,22 @@ public class mainScript : MonoBehaviour
         return occupArray[y,x] == 0;
     }
 
+    bool IsFieldOccupiedByEnemy(int y, int x)
+    {
+        if (y>7 || x>7 || y<0 || x<0) return false;
+        else if (occupArray[y,x] == 0) return false;
+        else return (occupArray[y,x] % 2 != GetFigTeamNumber(selectedFigure));
+    }
+
     Vector3 CalculateMoveVector()
     {
         return new Vector3(newSelX - lastSelX, 0, newSelY - lastSelY);
     }
 
-    string GetFigType()
+    string GetFigType(int figure)
     {
 
-        switch (selectedFigure / 100)
+        switch (figure / 100)
         {
         case 1:
             return "pesiak";
@@ -152,14 +207,19 @@ public class mainScript : MonoBehaviour
         }
     }
 
-    string GetFigTeam()
+    string GetFigTeam(int figure)
     {
-        if (selectedFigure.ToString().EndsWith("1")) return "C"; else return "";
+        if (figure.ToString().EndsWith("1")) return "C"; else return "";
     }
 
-    string GetFigIteration()
+    int GetFigTeamNumber(int figure)
     {
-        int iter = (selectedFigure % 100) / 10;
+        if (figure.ToString().EndsWith("1")) return 1; else return 0;
+    }
+
+    string GetFigIteration(int figure)
+    {
+        int iter = (figure % 100) / 10;
         if ( iter != 0)
         {
             return $" ({iter})";
@@ -185,21 +245,26 @@ public class mainScript : MonoBehaviour
 
 
 
-    List<string> FindPossibleNextFields()
+    public (List<string>list1, List<string> list2) FindPossibleNextFields(int team)
     {
         List<string> nextFields = new List<string>();
+        List<string> nextFieldsOccupiedByEnemy = new List<string>();
         int i = 1;
         int j;
-        if ( GetFigTeam() == "C" ) i = -1;
+        if ( GetFigTeam(selectedFigure) == "C" ) i = -1;
 
         switch (selectedFigure / 100)
         {
             // pesiak
             case 1:
-                CalculateField(lastSelY+1*i, lastSelX);
+                if (IsFieldFree(lastSelY+1*i, lastSelX)) nextFields.Add(GetWholeFieldNameFromXY(lastSelY+1*i, lastSelX));
                 if (mod(i,7) == lastSelY && IsFieldFree(lastSelY+1*i, lastSelX)) {
-                    CalculateField(lastSelY+2*i, lastSelX);
+                    if (IsFieldFree(lastSelY+2*i, lastSelX)) nextFields.Add(GetWholeFieldNameFromXY(lastSelY+2*i, lastSelX));
                 }
+                // vyhadzovanie pesiakov je specialne
+                if (IsFieldOccupiedByEnemy(lastSelY+1*i, lastSelX+1)) nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+1*i, lastSelX+1));
+                if (IsFieldOccupiedByEnemy(lastSelY+1*i, lastSelX-1)) nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+1*i, lastSelX-1));
+
                 break;
             // veza
             case 2:
@@ -209,6 +274,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY+j, lastSelX))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY+j, lastSelX)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX));
+                        break;
                     } else break;
                     j++;
                 }
@@ -218,6 +286,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY, lastSelX+j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX+j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY, lastSelX+j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX+j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -227,6 +298,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY-j, lastSelX))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY-j, lastSelX)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX));
+                        break;
                     } else break;
                     j++;
                 }
@@ -236,6 +310,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY, lastSelX-j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX-j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY, lastSelX-j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX-j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -259,6 +336,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY+j, lastSelX+j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX+j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY+j, lastSelX+j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX+j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -268,6 +348,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY-j, lastSelX+j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX+j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY-j, lastSelX+j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX+j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -277,6 +360,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY-j, lastSelX-j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX-j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY-j, lastSelX-j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX-j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -286,6 +372,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY+j, lastSelX-j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX-j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY+j, lastSelX-j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX-j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -298,6 +387,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY+j, lastSelX))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY+j, lastSelX)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX));
+                        break;
                     } else break;
                     j++;
                 }
@@ -307,6 +399,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY, lastSelX+j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX+j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY, lastSelX+j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX+j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -316,6 +411,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY-j, lastSelX))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY-j, lastSelX)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX));
+                        break;
                     } else break;
                     j++;
                 }
@@ -325,6 +423,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY, lastSelX-j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX-j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY, lastSelX-j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY, lastSelX-j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -334,6 +435,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY+j, lastSelX+j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX+j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY+j, lastSelX+j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX+j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -343,6 +447,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY-j, lastSelX+j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX+j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY-j, lastSelX+j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX+j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -352,6 +459,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY-j, lastSelX-j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX-j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY-j, lastSelX-j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY-j, lastSelX-j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -361,6 +471,9 @@ public class mainScript : MonoBehaviour
                     if (IsFieldFree(lastSelY+j, lastSelX-j))
                     {
                         nextFields.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX-j));
+                    } else if (IsFieldOccupiedByEnemy(lastSelY+j, lastSelX-j)) {
+                        nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(lastSelY+j, lastSelX-j));
+                        break;
                     } else break;
                     j++;
                 }
@@ -379,11 +492,12 @@ public class mainScript : MonoBehaviour
             default:
                 break;
         }
-        return nextFields;
+        return (nextFields, nextFieldsOccupiedByEnemy);
 
         void CalculateField(int y, int x)
         {
             if (IsFieldFree(y, x)) nextFields.Add(GetWholeFieldNameFromXY(y, x));
+            if (IsFieldOccupiedByEnemy(y, x)) nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(y, x));
         }
     }
 

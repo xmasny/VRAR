@@ -710,6 +710,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1324313687109032555, guid: f93e96ade03f6fd449054a5ed7b20d16, type: 3}
   m_PrefabInstance: {fileID: 615107944}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &91940218 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6325680298260471072, guid: 3cfb64eaf0e0c27439e2e4dc5e43e5e6, type: 3}
+  m_PrefabInstance: {fileID: 1573916190}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &94608571
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3408,6 +3413,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   highlightMaterial: {fileID: 2100000, guid: 4f06dfb9dd022d24ab91e89b1ebd97fc, type: 2}
   highlightMaterial2: {fileID: 0}
+  highlightMaterial3: {fileID: 0}
   defaultMaterial: {fileID: 0}
 --- !u!4 &437976688 stripped
 Transform:
@@ -15000,6 +15006,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1889539930}
   - component: {fileID: 1889539929}
+  - component: {fileID: 1889539931}
   m_Layer: 0
   m_Name: Sachovnica
   m_TagString: Untagged
@@ -15021,6 +15028,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   highlightMaterial: {fileID: 2100000, guid: 4f06dfb9dd022d24ab91e89b1ebd97fc, type: 2}
   highlightMaterial2: {fileID: 2100000, guid: 37fe2a6f8658e7547ad9e51723897cb1, type: 2}
+  highlightMaterial3: {fileID: 2100000, guid: 43b898e7a8332e84b9a4f6b3349e4949, type: 2}
   defaultMaterial: {fileID: 2100000, guid: 89f1224ce9e479e489a5aa28312043c8, type: 2}
 --- !u!4 &1889539930
 Transform:
@@ -15042,6 +15050,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1889539931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1889539928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b5ff5e01c504954e8bdcfad683fddbc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BIELI: {fileID: 636762474}
+  pesiak: {fileID: 6325680298260471072, guid: 3cfb64eaf0e0c27439e2e4dc5e43e5e6, type: 3}
+  pesiak1: {fileID: 91940218}
 --- !u!1 &1891211663
 GameObject:
   m_ObjectHideFlags: 0
