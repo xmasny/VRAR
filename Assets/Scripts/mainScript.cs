@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,7 +26,7 @@ public class MainScript : MonoBehaviour
     // 4 - strelec
     // 5 - kralovna
     // 6 - kral
-    private int[,] occupArray;
+    private int[,] occupArray = new int[8,8];
 
     private bool selected = false;
     private int lastSelX;
@@ -43,37 +46,49 @@ public class MainScript : MonoBehaviour
 
     private int figureToDelete;
     private string figureToDeleteName;
+    private string path = @"Assets\SavedGame\savedGame.txt";
 
     void Start()
     {
-        occupArray = new int[,] {
-            { 210, 310, 410, 600, 500, 400, 300, 200 },
-            { 100, 110, 120, 130, 140, 150, 160, 170 },
-            { 0, 0, 0, 0, 0, 0, 0, 0 },
-            { 0, 0, 0, 0, 0, 0, 0, 0 },
-            { 0, 0, 0, 0, 0, 0, 0, 0 },
-            { 0, 0, 0, 0, 0, 0, 0, 0 },
-            { 171, 161, 151, 141, 131, 121, 111, 101 },
-            { 211, 311, 411, 601, 501, 401, 301, 201 }
-        };
+        bool isContinue = PlayerPrefs.GetInt("CONTINUE") == 1;
 
-        // TODO generovanie panakov na spravne miesto
-        // string[] lines = System.IO.File.ReadAllLines(@"Assets\SavedGame\savedGame.txt");
-        // int i = 0;
-        // Debug.Log(lines.Length);
-        // foreach (string line in lines)
-        // {
-        //     string[] cols = line.Split(", ");
-        //     int j = 0;
-        //     foreach (string col in cols)
-        //     {
-        //         Debug.Log($"{j},{i}");
-        //         occupArray[i,j] = int.Parse(col);
-        //         j++;
-        //     }
-        //     i++;
-        // }
+        if (isContinue)
+        {
+            turn = PlayerPrefs.GetInt("TURN");
+
+            string[] lines = System.IO.File.ReadAllLines(path);
+            int i = 0;
+            foreach (string line in lines)
+            {
+                string[] cols = line.Split(", ");
+                int j = 0;
+                foreach (string col in cols)
+                {
+                    occupArray[i,j] = int.Parse(col);
+                    j++;
+                }
+                i++;
+            }
+        }
+        else
+        {
+            occupArray = new int[,] {
+                { 210, 310, 410, 600, 500, 400, 300, 200 },
+                { 100, 110, 120, 130, 140, 150, 160, 170 },
+                { 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 171, 161, 151, 141, 131, 121, 111, 101 },
+                { 211, 311, 411, 601, 501, 401, 301, 201 }
+            };
+        }
+        MeshRenderer mr = turnField.transform.GetComponent<MeshRenderer>();
+        mr.material = turn == 0 ? whiteMaterial : blackMaterial;
+
+        moveFiguresToCorrectPositions();
     }
+
     void Update()
     {
         if( Input.GetMouseButtonDown(0) )
@@ -162,6 +177,20 @@ public class MainScript : MonoBehaviour
         }
     }
 
+    void moveFiguresToCorrectPositions()
+    {
+        for (int k = 0; k < 8; k++)
+            for (int l = 0; l < 8; l++)
+            {
+                if (occupArray[k, l] == 0) continue;
+                else
+                {
+                    string figNameFull = GetFigTeam(occupArray[k, l]) + GetFigType(occupArray[k, l]) + GetFigIteration(occupArray[k, l]);
+                    GameObject.Find(figNameFull).transform.Translate(new Vector3(l, 0, k));
+                }
+            }
+    }
+
     void UnFocus()
     {
         MeshRenderer oldMeshRenderer = lastField.GetComponent<MeshRenderer>();
@@ -209,7 +238,7 @@ public class MainScript : MonoBehaviour
     {
         turn = 1 - turn;
         MeshRenderer mr = turnField.transform.GetComponent<MeshRenderer>();
-        mr.material = (mr.material.name).ToString().StartsWith("MatČiern") ? whiteMaterial : blackMaterial;
+        mr.material = turn == 0 ? whiteMaterial : blackMaterial;
     }
 
     string GetFigType(int figure)
@@ -528,5 +557,32 @@ public class MainScript : MonoBehaviour
         }
     }
 
+    void OnDisable()
+    {
+        PlayerPrefs.SetInt("TURN", turn);
 
+        try
+        {
+            // Create the file, or overwrite if the file exists.
+            using (FileStream fs = File.Create(path))
+            {
+                for (int k = 0; k < 8; k++)
+                {
+                    int[] row = new int[8];
+                    for (int l = 0; l < 8; l++)
+                    {
+                        row[l] = occupArray[k, l];
+                    }
+                    byte[] line = new UTF8Encoding(true).GetBytes(string.Join(", ", row));
+                    fs.Write(line, 0, line.Length);
+                    byte[] newline = Encoding.ASCII.GetBytes(Environment.NewLine);
+                    fs.Write(newline, 0, newline.Length);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+    }
 }

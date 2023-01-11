@@ -12,6 +12,13 @@ public class MenuScript : MonoBehaviour
 
     public void PlayGame()
     {
+        PlayerPrefs.SetInt("CONTINUE", 0);
+        SceneManager.LoadScene(1);
+    }
+
+    public void ContinueGame()
+    {
+        PlayerPrefs.SetInt("CONTINUE", 1);
         SceneManager.LoadScene(1);
     }
 
