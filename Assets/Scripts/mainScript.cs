@@ -4,9 +4,25 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MainScript : MonoBehaviour
 {
+    public GameObject BIELI;
+    public GameObject pesiak;
+    public GameObject veza;
+    public GameObject kon;
+    public GameObject strelec;
+    public GameObject kralovna;
+    public GameObject kral;
+
+    public GameObject CIERNI;
+    public GameObject Cpesiak;
+    public GameObject Cveza;
+    public GameObject Ckon;
+    public GameObject Cstrelec;
+    public GameObject Ckralovna;
+    public GameObject Ckral;
     public Material highlightMaterial;
 
     public Material highlightMaterial2;
@@ -17,6 +33,8 @@ public class MainScript : MonoBehaviour
     public Material whiteMaterial;
 
     public GameObject turnField;
+
+    public float speed;
 
     // vychodzie pozicie sachovych figurok - cisla reprezentuju typ, poradie a tim
     // prva cislica je typ, druha je iteracia a tretia je tim
@@ -47,6 +65,7 @@ public class MainScript : MonoBehaviour
     private int figureToDelete;
     private string figureToDeleteName;
     private string path = @"Assets\SavedGame\savedGame.txt";
+    private Vector3 destination;
 
     void Start()
     {
@@ -86,11 +105,54 @@ public class MainScript : MonoBehaviour
         MeshRenderer mr = turnField.transform.GetComponent<MeshRenderer>();
         mr.material = turn == 0 ? whiteMaterial : blackMaterial;
 
+        // BIELI
+        if (isInOccup(100)) Instantiate(pesiak, new Vector3(0.7f, 0.95f, -0.6f), Quaternion.identity, BIELI.transform).name = "pesiak";
+        for (int i = 0; i < 7; i++)
+        {
+            if (isInOccup(100 + (i+1) * 10)) Instantiate(pesiak, new Vector3(0.7f, 0.95f, -0.6f), Quaternion.identity, BIELI.transform).name = $"pesiak ({i+1})";
+        }
+        if (isInOccup(200)) Instantiate(veza, new Vector3(-7.7f, 0.95f, 0.6f), Quaternion.identity, BIELI.transform).name = "veza";
+        if (isInOccup(210)) Instantiate(veza, new Vector3(-7.7f, 0.95f, 0.6f), Quaternion.identity, BIELI.transform).name = "veza (1)";
+        if (isInOccup(300)) Instantiate(kon, new Vector3(-1.7f, 0.95f, -1.8f), Quaternion.identity, BIELI.transform).name = "kon";
+        if (isInOccup(310)) Instantiate(kon, new Vector3(-1.7f, 0.95f, -1.8f), Quaternion.identity, BIELI.transform).name = "kon (1)";
+        if (isInOccup(400)) Instantiate(strelec, new Vector3(-4.1f, 0.95f, -1.8f), Quaternion.identity, BIELI.transform).name = "strelec";
+        if (isInOccup(410)) Instantiate(strelec, new Vector3(-4.1f, 0.95f, -1.8f), Quaternion.identity, BIELI.transform).name = "strelec (1)";
+        if (isInOccup(500)) Instantiate(kralovna, new Vector3(-2.9f, 0.95f, 0.6f), Quaternion.identity, BIELI.transform).name = "kralovna";
+        if (isInOccup(600)) Instantiate(kral, new Vector3(-4.1f, 0.95f, 0.6f), Quaternion.identity, BIELI.transform).name = "kral";
+
+        // CIERNI
+        if (isInOccup(101)) Instantiate(Cpesiak, new Vector3(0.7f, 0.95f, -0.6f), Quaternion.identity, CIERNI.transform).name = "Cpesiak";
+        for (int i = 0; i < 7; i++)
+        {
+            if (isInOccup(101 + (i+1) * 10)) Instantiate(Cpesiak, new Vector3(0.7f, 0.95f, -0.6f), Quaternion.identity, CIERNI.transform).name = $"Cpesiak ({i+1})";
+        }
+        if (isInOccup(201)) Instantiate(Cveza, new Vector3(-7.7f, 0.95f, 0.6f), Quaternion.identity, CIERNI.transform).name = "Cveza";
+        if (isInOccup(211)) Instantiate(Cveza, new Vector3(-7.7f, 0.95f, 0.6f), Quaternion.identity, CIERNI.transform).name = "Cveza (1)";
+        if (isInOccup(301)) Instantiate(Ckon, new Vector3(-5.2f, 0.95f, -5.2f), Quaternion.identity, CIERNI.transform).name = "Ckon";
+        if (isInOccup(311)) Instantiate(Ckon, new Vector3(-5.2f, 0.95f, -5.2f), Quaternion.identity, CIERNI.transform).name = "Ckon (1)";
+        if (isInOccup(401)) Instantiate(Cstrelec, new Vector3(-4.1f, 0.95f, -1.8f), Quaternion.identity, CIERNI.transform).name = "Cstrelec";
+        if (isInOccup(411)) Instantiate(Cstrelec, new Vector3(-4.1f, 0.95f, -1.8f), Quaternion.identity, CIERNI.transform).name = "Cstrelec (1)";
+        if (isInOccup(501)) Instantiate(Ckralovna, new Vector3(-2.9f, 0.95f, 0.6f), Quaternion.identity, CIERNI.transform).name = "Ckralovna";
+        if (isInOccup(601)) Instantiate(Ckral, new Vector3(-4.1f, 0.95f, 0.6f), Quaternion.identity, CIERNI.transform).name = "Ckral";
+
         moveFiguresToCorrectPositions();
+    }
+
+    bool isInOccup(int val)
+    {
+        bool isIn = false;
+        for (int k = 0; k < 8; k++)
+            for (int l = 0; l < 8; l++)
+                if (occupArray[k, l] == val) isIn = true;
+        return isIn;
+
     }
 
     void Update()
     {
+        if (selected == false && selectedFigureName != null && destination != Vector3.zero && destination != GameObject.Find(selectedFigureName).transform.localPosition) {
+            IncrementAnimationPosition();
+        }
         if( Input.GetMouseButtonDown(0) )
         {
             RaycastHit hit;
@@ -113,7 +175,8 @@ public class MainScript : MonoBehaviour
 
                         // presun figurky
                         Vector3 moveVector = CalculateMoveVector();
-                        GameObject.Find(selectedFigureName).transform.Translate(moveVector);
+                        destination = GameObject.Find(selectedFigureName).transform.localPosition + moveVector;
+
                         occupArray[lastSelY,lastSelX] = 0;
                         occupArray[newSelY,newSelX] = selectedFigure;
                         UnFocus();
@@ -128,15 +191,18 @@ public class MainScript : MonoBehaviour
                         figureToDelete = occupArray[newSelY,newSelX];
                         figureToDeleteName = GetFigTeam(figureToDelete) + GetFigType(figureToDelete) + GetFigIteration(figureToDelete);
                         Destroy(GameObject.Find(figureToDeleteName));
+
                         // presun novej figurky
                         Vector3 moveVector = CalculateMoveVector();
-                        GameObject.Find(selectedFigureName).transform.Translate(moveVector);
+                        destination = GameObject.Find(selectedFigureName).transform.localPosition + moveVector;
 
                         occupArray[lastSelY,lastSelX] = 0;
                         occupArray[newSelY,newSelX] = selectedFigure;
                         UnFocus();
+                        if (figureToDelete == 600 || figureToDelete == 601) EndGame();
                         return;
                     }
+                    destination = Vector3.zero;
 
                     UnFocus();
                 }
@@ -296,6 +362,21 @@ public class MainScript : MonoBehaviour
         return (x%m + m)%m;
     }
 
+    void IncrementAnimationPosition()
+    {
+        // Calculate the next position
+        float delta = speed * Time.deltaTime;
+        Vector3 currentPosition = GameObject.Find(selectedFigureName).transform.localPosition;
+        Vector3 nextPosition = Vector3.zero;
+
+        if (Vector3.Distance(currentPosition, destination) > 0.1) {
+            nextPosition = Vector3.Lerp (currentPosition, destination, delta);
+        } else {
+            nextPosition = destination;
+        }
+        // Move the object to the next position
+        GameObject.Find(selectedFigureName).transform.localPosition = nextPosition;
+    }
 
 
 
@@ -555,6 +636,22 @@ public class MainScript : MonoBehaviour
             if (IsFieldFree(y, x)) nextFields.Add(GetWholeFieldNameFromXY(y, x));
             if (IsFieldOccupiedByEnemy(y, x)) nextFieldsOccupiedByEnemy.Add(GetWholeFieldNameFromXY(y, x));
         }
+    }
+
+    void EndGame()
+    {
+        turn = 0;
+        occupArray = new int[,] {
+            { 210, 310, 410, 600, 500, 400, 300, 200 },
+            { 100, 110, 120, 130, 140, 150, 160, 170 },
+            { 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 171, 161, 151, 141, 131, 121, 111, 101 },
+            { 211, 311, 411, 601, 501, 401, 301, 201 }
+        };
+        SceneManager.LoadScene(0);
     }
 
     void OnDisable()

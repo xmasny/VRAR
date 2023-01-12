@@ -2747,7 +2747,6 @@ GameObject:
   m_Component:
   - component: {fileID: 393813081}
   - component: {fileID: 393813083}
-  - component: {fileID: 393813082}
   m_Layer: 0
   m_Name: Sachovnica (1)
   m_TagString: Untagged
@@ -2776,7 +2775,7 @@ Transform:
   m_Father: {fileID: 865214370}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &393813082
+--- !u!114 &393813083
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2785,7 +2784,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 393813080}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b5ff5e01c504954e8bdcfad683fddbc, type: 3}
+  m_Script: {fileID: 11500000, guid: 584e26d47e75aae4cac075a51b573dc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   BIELI: {fileID: 80215676}
@@ -2802,18 +2801,6 @@ MonoBehaviour:
   Cstrelec: {fileID: 1309480336226312261, guid: 18a7dc4c2607849409d245108297273a, type: 3}
   Ckralovna: {fileID: 6021537715288302189, guid: 7ceecab5a056d0643910560cf4bd5fd3, type: 3}
   Ckral: {fileID: 8294868460413592528, guid: c6ff52de7d06fad40b976e16268975a7, type: 3}
---- !u!114 &393813083
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 393813080}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 584e26d47e75aae4cac075a51b573dc7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
   highlightMaterial: {fileID: 2100000, guid: 4f06dfb9dd022d24ab91e89b1ebd97fc, type: 2}
   highlightMaterial2: {fileID: 2100000, guid: 37fe2a6f8658e7547ad9e51723897cb1, type: 2}
   highlightMaterial3: {fileID: 2100000, guid: 43b898e7a8332e84b9a4f6b3349e4949, type: 2}
@@ -2821,6 +2808,7 @@ MonoBehaviour:
   blackMaterial: {fileID: 2100000, guid: 22695d280669ea14faa82462174ed1db, type: 2}
   whiteMaterial: {fileID: 2100000, guid: b14613a58240c704da6cef564f71593d, type: 2}
   turnField: {fileID: 1502286555}
+  speed: 5
 --- !u!1 &407496405
 GameObject:
   m_ObjectHideFlags: 0
@@ -12734,7 +12722,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1889539930}
   - component: {fileID: 1889539929}
-  - component: {fileID: 1889539931}
   m_Layer: 0
   m_Name: Sachovnica
   m_TagString: Untagged
@@ -12754,6 +12741,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 584e26d47e75aae4cac075a51b573dc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BIELI: {fileID: 0}
+  pesiak: {fileID: 0}
+  veza: {fileID: 0}
+  kon: {fileID: 0}
+  strelec: {fileID: 0}
+  kralovna: {fileID: 0}
+  kral: {fileID: 0}
+  CIERNI: {fileID: 0}
+  Cpesiak: {fileID: 0}
+  Cveza: {fileID: 0}
+  Ckon: {fileID: 0}
+  Cstrelec: {fileID: 0}
+  Ckralovna: {fileID: 0}
+  Ckral: {fileID: 0}
   highlightMaterial: {fileID: 2100000, guid: 4f06dfb9dd022d24ab91e89b1ebd97fc, type: 2}
   highlightMaterial2: {fileID: 2100000, guid: 37fe2a6f8658e7547ad9e51723897cb1, type: 2}
   highlightMaterial3: {fileID: 2100000, guid: 43b898e7a8332e84b9a4f6b3349e4949, type: 2}
@@ -12761,6 +12762,7 @@ MonoBehaviour:
   blackMaterial: {fileID: 2100000, guid: 22695d280669ea14faa82462174ed1db, type: 2}
   whiteMaterial: {fileID: 2100000, guid: b14613a58240c704da6cef564f71593d, type: 2}
   turnField: {fileID: 1320821452}
+  speed: 0
 --- !u!4 &1889539930
 Transform:
   m_ObjectHideFlags: 0
@@ -12782,32 +12784,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1889539931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1889539928}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b5ff5e01c504954e8bdcfad683fddbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  BIELI: {fileID: 636762474}
-  pesiak: {fileID: 6325680298260471072, guid: 3cfb64eaf0e0c27439e2e4dc5e43e5e6, type: 3}
-  veza: {fileID: 3647406928738934585, guid: c61dcf80e975a3140beb899d68764bd9, type: 3}
-  kon: {fileID: 1813605829834834129, guid: f93e96ade03f6fd449054a5ed7b20d16, type: 3}
-  strelec: {fileID: 7546337582576480360, guid: c5a0b9747a4e8484b89c187433eafd59, type: 3}
-  kralovna: {fileID: 8149412120370647947, guid: d28360c786cb86d458cfa3c8e1d47c5b, type: 3}
-  kral: {fileID: 6035780742300720682, guid: c89a722b3f95f0b41a38e6bce271b997, type: 3}
-  CIERNI: {fileID: 1931294044}
-  Cpesiak: {fileID: 4329904200685137196, guid: 0a68c19e4e9d4d34f83b262a82f2c30f, type: 3}
-  Cveza: {fileID: 4984750888117248391, guid: bfb824f7825943142b1bf94ed1b1aace, type: 3}
-  Ckon: {fileID: 3479251464628024023, guid: 965131ff35ef85b46add18b92f66e77d, type: 3}
-  Cstrelec: {fileID: 1309480336226312261, guid: 18a7dc4c2607849409d245108297273a, type: 3}
-  Ckralovna: {fileID: 6021537715288302189, guid: 7ceecab5a056d0643910560cf4bd5fd3, type: 3}
-  Ckral: {fileID: 8294868460413592528, guid: c6ff52de7d06fad40b976e16268975a7, type: 3}
 --- !u!1 &1889825313
 GameObject:
   m_ObjectHideFlags: 0
