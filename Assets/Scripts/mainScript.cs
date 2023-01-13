@@ -64,11 +64,13 @@ public class MainScript : MonoBehaviour
 
     private int figureToDelete;
     private string figureToDeleteName;
-    private string path = @"Assets\SavedGame\savedGame.txt";
+    private string path;
     private Vector3 destination;
 
     void Start()
     {
+        path = Application.persistentDataPath + "/savedGame.txt";
+
         bool isContinue = PlayerPrefs.GetInt("CONTINUE") == 1;
 
         if (isContinue)
