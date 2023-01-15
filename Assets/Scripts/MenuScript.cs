@@ -10,11 +10,20 @@ public class MenuScript : MonoBehaviour
         SceneManager.LoadScene(0);
     }
 
-    public void PlayGame()
+    public void PlayGameMulti()
     {
         PlayerPrefs.SetInt("CONTINUE", 0);
+        PlayerPrefs.SetInt("SINGLE", 0);
         SceneManager.LoadScene(1);
     }
+
+    public void PlayGameSingle()
+    {
+        PlayerPrefs.SetInt("CONTINUE", 0);
+        PlayerPrefs.SetInt("SINGLE", 1);
+        SceneManager.LoadScene(1);
+    }
+
 
     public void ContinueGame()
     {

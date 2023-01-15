@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Random = UnityEngine.Random;
 
 public class MainScript : MonoBehaviour
 {
@@ -61,17 +62,21 @@ public class MainScript : MonoBehaviour
 
     private int selectedFigure;
     private string selectedFigureName;
+    private Transform selectedFigureNameTransform;
 
     private int figureToDelete;
     private string figureToDeleteName;
     private string path;
     private Vector3 destination;
+    private bool isContinue;
+    private bool isSinglePlayer = false;
 
     void Start()
     {
         path = Application.persistentDataPath + "/savedGame.txt";
 
-        bool isContinue = PlayerPrefs.GetInt("CONTINUE") == 1;
+        isContinue = PlayerPrefs.GetInt("CONTINUE") == 1;
+        isSinglePlayer = PlayerPrefs.GetInt("SINGLE") == 1;
 
         if (isContinue)
         {
@@ -152,96 +157,185 @@ public class MainScript : MonoBehaviour
 
     void Update()
     {
-        if (selected == false && selectedFigureName != null && destination != Vector3.zero && destination != GameObject.Find(selectedFigureName).transform.localPosition) {
+        bool helpBool = selectedFigureName != null && destination != Vector3.zero;
+        if (selected == false && helpBool && destination != selectedFigureNameTransform.localPosition) {
             IncrementAnimationPosition();
-        }
-        if( Input.GetMouseButtonDown(0) )
+        } else
         {
-            RaycastHit hit;
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-            if( Physics.Raycast(ray.origin, ray.direction, out hit) )
+            if (isSinglePlayer && turn == 1) // v singleplayerovi ked skonci animacia tak urob pohyb bota
             {
-                if (selected == true)
+                List<int> blackOccupFields = new List<int>();
+                for (int k = 0; k < 8; k++)
+                    for (int l = 0; l < 8; l++)
+                        if (occupArray[k, l].ToString().EndsWith("1"))
+                        {
+                            blackOccupFields.Add(occupArray[k, l]);
+                        }
+                string targetField = "";
+                for (int i = 0; i < 16; i++)
                 {
-                    newSelX = int.Parse(hit.transform.name) % 10;
-                    newSelY = int.Parse(hit.transform.name) / 10;
-                    newFieldName = GetWholeFieldName(hit.transform.name);
-                    newField = hit.transform;
-
-
-                    if (possibleNextFieldsFree.Contains(newFieldName))
-                    {
-                        // zmena poradia, ide super
-                        ChangeTurn();
-
-                        // presun figurky
-                        Vector3 moveVector = CalculateMoveVector();
-                        destination = GameObject.Find(selectedFigureName).transform.localPosition + moveVector;
-
-                        occupArray[lastSelY,lastSelX] = 0;
-                        occupArray[newSelY,newSelX] = selectedFigure;
-                        UnFocus();
-                        return;
-                    }
-                    if (possibleNextFieldsOccupiedByEnemy.Contains(newFieldName))
-                    {
-                        // zmena poradia, ide super
-                        ChangeTurn();
-
-                        // vymazanie starej figurky
-                        figureToDelete = occupArray[newSelY,newSelX];
-                        figureToDeleteName = GetFigTeam(figureToDelete) + GetFigType(figureToDelete) + GetFigIteration(figureToDelete);
-                        Destroy(GameObject.Find(figureToDeleteName));
-
-                        // presun novej figurky
-                        Vector3 moveVector = CalculateMoveVector();
-                        destination = GameObject.Find(selectedFigureName).transform.localPosition + moveVector;
-
-                        occupArray[lastSelY,lastSelX] = 0;
-                        occupArray[newSelY,newSelX] = selectedFigure;
-                        UnFocus();
-                        if (figureToDelete == 600 || figureToDelete == 601) EndGame();
-                        return;
-                    }
-                    destination = Vector3.zero;
-
-                    UnFocus();
-                }
-
-                lastSelX = int.Parse(hit.transform.name) % 10;
-                lastSelY = int.Parse(hit.transform.name) / 10;
-                lastFieldName = GetWholeFieldName(hit.transform.name);
-                lastField = hit.transform;
-
-                selectedFigure = occupArray[lastSelY,lastSelX];
-
-                // iba ked je na rade
-                if (!IsFieldFree(lastSelY, lastSelX) && GetFigTeamNumber(selectedFigure) == turn)
-                {
-                    MeshRenderer meshRenderer = hit.transform.GetComponent<MeshRenderer>();
-                    meshRenderer.material = highlightMaterial;
-
-                    selected = true;
-
-                    if ( selectedFigure / 100 == 0 ) return;
+                    int randomIndex = Random.Range(0, blackOccupFields.Count);
+                    selectedFigure = blackOccupFields[randomIndex];
                     selectedFigureName = GetFigTeam(selectedFigure) + GetFigType(selectedFigure) + GetFigIteration(selectedFigure);
+                    selectedFigureNameTransform = GameObject.Find(selectedFigureName).transform;
+
+                    for (int k = 0; k < 8; k++)
+                        for (int l = 0; l < 8; l++)
+                            if (occupArray[k, l] == selectedFigure)
+                            {
+                                lastSelX = l;
+                                lastSelY = k;
+                            }
 
                     // calculate possible next moves
                     (possibleNextFieldsFree, possibleNextFieldsOccupiedByEnemy) = FindPossibleNextFields(selectedFigure % 2);
-                    // highlight free fields
-                    possibleNextFieldsFree.ForEach(possibleFieldName => {
-                        MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
-                        mr.material = highlightMaterial2;
-                    });
-                    // highlight enemy-occupied fields
-                    possibleNextFieldsOccupiedByEnemy.ForEach(possibleFieldName => {
-                        MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
-                        mr.material = highlightMaterial3;
-                    });
+                    // if can not move, try another
+                    if (possibleNextFieldsFree.Count == 0 && possibleNextFieldsOccupiedByEnemy.Count == 0)
+                    {
+                        blackOccupFields.Remove(randomIndex);
+                        continue;
+                    }
+                    // choose field where to move
+                    if (possibleNextFieldsOccupiedByEnemy.Count > 0)
+                    {
+                        int randomMoveIndex = Random.Range(0, possibleNextFieldsOccupiedByEnemy.Count);
+                        targetField = possibleNextFieldsOccupiedByEnemy[randomMoveIndex];
+                        break;
+                    }
+                    if (possibleNextFieldsFree.Count > 0)
+                    {
+                        int randomMoveIndex = Random.Range(0, possibleNextFieldsFree.Count);
+                        targetField = possibleNextFieldsFree[randomMoveIndex];
+                        break;
+                    }
                 }
 
-            } else if (lastField) UnFocus();
+                newSelX = int.Parse(targetField) % 10;
+                newSelY = int.Parse(targetField) / 10;
+
+                if (possibleNextFieldsOccupiedByEnemy.Count > 0) // vyhadzujeme
+                {
+                    // zmena poradia, ide super
+                    ChangeTurn();
+
+                    // vymazanie starej figurky
+                    figureToDelete = occupArray[newSelY,newSelX];
+                    figureToDeleteName = GetFigTeam(figureToDelete) + GetFigType(figureToDelete) + GetFigIteration(figureToDelete);
+                    Destroy(GameObject.Find(figureToDeleteName));
+
+                    // presun novej figurky
+                    Vector3 moveVector = CalculateMoveVector();
+                    destination = selectedFigureNameTransform.localPosition + moveVector;
+
+                    occupArray[lastSelY,lastSelX] = 0;
+                    occupArray[newSelY,newSelX] = selectedFigure;
+                    if (figureToDelete == 600 || figureToDelete == 601) EndGame();
+                    return;
+                }
+                else
+                {
+                    // zmena poradia, ide super
+                    ChangeTurn();
+
+                    // presun figurky
+                    Vector3 moveVector = CalculateMoveVector();
+                    destination = selectedFigureNameTransform.localPosition + moveVector;
+
+                    occupArray[lastSelY,lastSelX] = 0;
+                    occupArray[newSelY,newSelX] = selectedFigure;
+                    return;
+                }
+
+            }
+            if( Input.GetMouseButtonDown(0) && ((isSinglePlayer && turn == 0) || !isSinglePlayer))
+            {
+                RaycastHit hit;
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+                if( Physics.Raycast(ray.origin, ray.direction, out hit) )
+                {
+                    if (selected == true)
+                    {
+                        newSelX = int.Parse(hit.transform.name) % 10;
+                        newSelY = int.Parse(hit.transform.name) / 10;
+                        newFieldName = GetWholeFieldName(hit.transform.name);
+                        newField = hit.transform;
+
+
+                        if (possibleNextFieldsFree.Contains(newFieldName))
+                        {
+                            // zmena poradia, ide super
+                            ChangeTurn();
+
+                            // presun figurky
+                            Vector3 moveVector = CalculateMoveVector();
+                            destination = selectedFigureNameTransform.localPosition + moveVector;
+
+                            occupArray[lastSelY,lastSelX] = 0;
+                            occupArray[newSelY,newSelX] = selectedFigure;
+                            UnFocus();
+                            return;
+                        }
+                        if (possibleNextFieldsOccupiedByEnemy.Contains(newFieldName))
+                        {
+                            // zmena poradia, ide super
+                            ChangeTurn();
+
+                            // vymazanie starej figurky
+                            figureToDelete = occupArray[newSelY,newSelX];
+                            figureToDeleteName = GetFigTeam(figureToDelete) + GetFigType(figureToDelete) + GetFigIteration(figureToDelete);
+                            Destroy(GameObject.Find(figureToDeleteName));
+
+                            // presun novej figurky
+                            Vector3 moveVector = CalculateMoveVector();
+                            destination = selectedFigureNameTransform.localPosition + moveVector;
+
+                            occupArray[lastSelY,lastSelX] = 0;
+                            occupArray[newSelY,newSelX] = selectedFigure;
+                            UnFocus();
+                            if (figureToDelete == 600 || figureToDelete == 601) EndGame();
+                            return;
+                        }
+                        destination = Vector3.zero;
+
+                        UnFocus();
+                    }
+
+                    lastSelX = int.Parse(hit.transform.name) % 10;
+                    lastSelY = int.Parse(hit.transform.name) / 10;
+                    lastFieldName = GetWholeFieldName(hit.transform.name);
+                    lastField = hit.transform;
+
+                    selectedFigure = occupArray[lastSelY,lastSelX];
+
+                    // iba ked je na rade
+                    if (!IsFieldFree(lastSelY, lastSelX) && GetFigTeamNumber(selectedFigure) == turn)
+                    {
+                        MeshRenderer meshRenderer = hit.transform.GetComponent<MeshRenderer>();
+                        meshRenderer.material = highlightMaterial;
+
+                        selected = true;
+
+                        if ( selectedFigure / 100 == 0 ) return;
+                        selectedFigureName = GetFigTeam(selectedFigure) + GetFigType(selectedFigure) + GetFigIteration(selectedFigure);
+                        selectedFigureNameTransform = GameObject.Find(selectedFigureName).transform;
+
+                        // calculate possible next moves
+                        (possibleNextFieldsFree, possibleNextFieldsOccupiedByEnemy) = FindPossibleNextFields(selectedFigure % 2);
+                        // highlight free fields
+                        possibleNextFieldsFree.ForEach(possibleFieldName => {
+                            MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
+                            mr.material = highlightMaterial2;
+                        });
+                        // highlight enemy-occupied fields
+                        possibleNextFieldsOccupiedByEnemy.ForEach(possibleFieldName => {
+                            MeshRenderer mr = GameObject.Find(possibleFieldName).transform.GetComponent<MeshRenderer>();
+                            mr.material = highlightMaterial3;
+                        });
+                    }
+
+                } else if (lastField) UnFocus();
+            }
         }
     }
 
@@ -368,7 +462,7 @@ public class MainScript : MonoBehaviour
     {
         // Calculate the next position
         float delta = speed * Time.deltaTime;
-        Vector3 currentPosition = GameObject.Find(selectedFigureName).transform.localPosition;
+        Vector3 currentPosition = selectedFigureNameTransform.localPosition;
         Vector3 nextPosition = Vector3.zero;
 
         if (Vector3.Distance(currentPosition, destination) > 0.1) {
@@ -377,12 +471,8 @@ public class MainScript : MonoBehaviour
             nextPosition = destination;
         }
         // Move the object to the next position
-        GameObject.Find(selectedFigureName).transform.localPosition = nextPosition;
+        selectedFigureNameTransform.localPosition = nextPosition;
     }
-
-
-
-
 
     public (List<string>list1, List<string> list2) FindPossibleNextFields(int team)
     {
@@ -390,7 +480,7 @@ public class MainScript : MonoBehaviour
         List<string> nextFieldsOccupiedByEnemy = new List<string>();
         int i = 1;
         int j;
-        if ( GetFigTeam(selectedFigure) == "C" ) i = -1;
+        if ( team == 1 ) i = -1;
 
         switch (selectedFigure / 100)
         {
